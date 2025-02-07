@@ -1,4 +1,4 @@
-package de.ma.mme.def;
+package de.ma.mme.customerB;
 
 
 import de.ma.mme.base.Customer;

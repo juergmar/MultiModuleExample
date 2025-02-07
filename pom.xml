@@ -10,8 +10,8 @@
 
     <modules>
         <module>my-app-base</module>
-        <module>my-app-default</module>
         <module>my-app-customerA</module>
+        <module>my-app-customerB</module>
     </modules>
 
     <dependencyManagement>

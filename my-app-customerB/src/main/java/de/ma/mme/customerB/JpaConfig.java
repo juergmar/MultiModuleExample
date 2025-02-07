@@ -1,4 +1,4 @@
-package de.ma.mme.def;
+package de.ma.mme.customerB;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Configuration;
