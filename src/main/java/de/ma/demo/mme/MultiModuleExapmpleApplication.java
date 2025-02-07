@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class MultiModuleExapmpleApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MultiModuleExapmpleApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MultiModuleExapmpleApplication.class, args);
+    }
 
 }

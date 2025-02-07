@@ -1,11 +1,11 @@
-package de.ma.mme;
+package de.ma.mme.def;
 
 
 import de.ma.mme.base.Customer;
 import de.ma.mme.base.CustomerRepository;
 import org.springframework.web.bind.annotation.*;
 
-        import java.util.List;
+import java.util.List;
 
 @RestController
 @RequestMapping("/customers")

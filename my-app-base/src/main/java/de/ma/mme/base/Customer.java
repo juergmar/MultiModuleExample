@@ -1,8 +1,8 @@
-package de.ma.mme;
+package de.ma.mme.base;
 
 import jakarta.persistence.*;
 
-@Entity
+@Entity(name = "Customer")
 @Table(name = "customer")
 public class Customer {
     @Id

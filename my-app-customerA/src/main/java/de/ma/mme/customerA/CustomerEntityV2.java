@@ -1,4 +1,4 @@
-package de.ma.mme;
+package de.ma.mme.customerA;
 
 import jakarta.persistence.*;
 
