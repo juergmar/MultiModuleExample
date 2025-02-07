@@ -53,7 +53,7 @@
                             <goal>repackage</goal>
                         </goals>
                         <configuration>
-                            <mainClass>de.ma.mme.customerB.CustomerBApplication</mainClass>
+                            <mainClass>de.ma.mme.customerB.CustomerAApplication</mainClass>
                         </configuration>
                     </execution>
                 </executions>
