@@ -54,7 +54,6 @@
                         </goals>
                         <configuration>
                             <mainClass>de.ma.mme.customerB.CustomerBApplication</mainClass>
-                            <classifier>exec</classifier>
                         </configuration>
                     </execution>
                 </executions>
