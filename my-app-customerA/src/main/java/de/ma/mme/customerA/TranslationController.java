@@ -39,7 +39,7 @@ public class TranslationController {
     public Map<String, Map<String, String>> getGroupedTranslations() {
         Map<String, Map<String, String>> result = new HashMap<>();
 
-        // Group translations by categories
+        // Group translations by categories (this is just an example grouping)
         Map<String, String> general = new HashMap<>();
         Map<String, String> ui = new HashMap<>();
         Map<String, String> actions = new HashMap<>();

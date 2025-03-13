@@ -8,7 +8,8 @@ import de.ma.mme.annotation.GenerateTranslations;
 @GenerateTranslations(
         value = "translations.json",
         packageName = "de.ma.mme.customerA",
-        enumName = "Translations"
+        enumName = "Translations",
+        useLombok = true
 )
 public class CustomerAApplication {
     public static void main(String[] args) {

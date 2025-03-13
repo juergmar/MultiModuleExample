@@ -26,4 +26,9 @@ public @interface GenerateTranslations {
      * Name of the generated enum class.
      */
     String enumName() default "Translations";
+
+    /**
+     * Whether to use Lombok annotations in the generated code.
+     */
+    boolean useLombok() default false;
 }
