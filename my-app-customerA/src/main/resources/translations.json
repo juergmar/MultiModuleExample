@@ -1,0 +1,18 @@
+{
+  "HELLO": "Hello",
+  "GOODBYE": "Goodbye",
+  "WELCOME": "Welcome to Customer A",
+  "THANK_YOU": "Thank you for choosing Customer A",
+  "PLEASE": "Please",
+  "YES": "Yes",
+  "NO": "No",
+  "CANCEL": "Cancel",
+  "SUBMIT": "Submit",
+  "ERROR": "Error",
+  "CUSTOMER_SERVICE": "Customer Service",
+  "CONTACT_US": "Contact Us",
+  "LOGIN": "Login",
+  "LOGOUT": "Logout",
+  "PROFILE": "Profile",
+  "SETTINGS": "Settings"
+}

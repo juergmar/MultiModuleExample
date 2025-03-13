@@ -9,6 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>my-annotation-module</module>
         <module>my-app-base</module>
         <module>my-app-customerA</module>
         <module>my-app-customerB</module>
