@@ -1,0 +1,25 @@
+{
+  "appName": "Customer B Application",
+  "version": "1.0.0",
+  "apiPrefix": "/api/v1",
+  "features": {
+    "enableAnalytics": true,
+    "enableExport": true,
+    "maxExportSize": 1000,
+    "enableNotifications": false,
+    "cacheTimeoutMinutes": 30
+  },
+  "ui": {
+    "theme": "dark",
+    "defaultLanguage": "en",
+    "refreshIntervalSeconds": 60,
+    "maxItemsPerPage": 50,
+    "dateFormat": "yyyy-MM-dd"
+  },
+  "database": {
+    "maxPoolSize": 20,
+    "connectionTimeoutSeconds": 30,
+    "idleTimeoutMinutes": 10,
+    "retryAttempts": 3
+  }
+}
