@@ -51,15 +51,34 @@
 </head>
 <body>
 <div class="container">
+    <!-- SECTION: header -->
     <div class="header">
         <h1 th:text="${subject}">Email Subject</h1>
     </div>
+    <!-- END SECTION: header -->
+
+    <!-- SECTION: content -->
     <div class="content">
         <!-- Content provided by each email template -->
         <th:block th:if="${content}" th:utext="${content}">
             Default content goes here
         </th:block>
     </div>
+    <!-- END SECTION: content -->
+
+    <!-- SECTION: orderSummary -->
+    <!-- Order summary section will be placed here if defined -->
+    <!-- END SECTION: orderSummary -->
+
+    <!-- SECTION: shipping -->
+    <!-- Shipping information section will be placed here if defined -->
+    <!-- END SECTION: shipping -->
+
+    <!-- SECTION: tracking -->
+    <!-- Order tracking section will be placed here if defined -->
+    <!-- END SECTION: tracking -->
+
+    <!-- SECTION: footer -->
     <div class="footer">
         <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2023</span>
             <span th:text="${companyName ?: 'Example Company'}">Example Company</span>. All rights reserved.</p>
@@ -67,6 +86,7 @@
         <p>If you don't want to receive these emails, you can
             <a href="#" style="color: #999999;">unsubscribe</a> at any time.</p>
     </div>
+    <!-- END SECTION: footer -->
 </div>
 </body>
 </html>

@@ -8,11 +8,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Represents a variable definition in an email template from the JSON schema.
  */
 public class VariableDefinition {
+    private static final Pattern GENERIC_PATTERN = Pattern.compile("([^<]+)<(.+)>");
+
     private String name;
     private String type;
     private String description;
@@ -98,6 +102,42 @@ public class VariableDefinition {
      */
     private TypeName getBaseTypeName() {
         if ("complex".equalsIgnoreCase(type) && complexType != null) {
+            // Handle generic types like List<OrderItem>
+            Matcher matcher = GENERIC_PATTERN.matcher(complexType);
+            if (matcher.matches()) {
+                String rawType = matcher.group(1);
+                String typeParameter = matcher.group(2);
+
+                if (rawType.endsWith("List") || rawType.endsWith("java.util.List")) {
+                    return ParameterizedTypeName.get(
+                            ClassName.get(List.class),
+                            getClassName(typeParameter)
+                    );
+                } else if (rawType.endsWith("Map") || rawType.endsWith("java.util.Map")) {
+                    String[] typeParams = typeParameter.split(",");
+                    if (typeParams.length == 2) {
+                        return ParameterizedTypeName.get(
+                                ClassName.get(Map.class),
+                                getClassName(typeParams[0].trim()),
+                                getClassName(typeParams[1].trim())
+                        );
+                    }
+                } else {
+                    // Other generic types
+                    try {
+                        ClassName rawClassName = getClassName(rawType);
+                        return ParameterizedTypeName.get(
+                                rawClassName,
+                                getClassName(typeParameter)
+                        );
+                    } catch (Exception e) {
+                        // Fallback to simple class
+                        return ClassName.bestGuess(complexType);
+                    }
+                }
+            }
+
+            // Not a generic type
             return ClassName.bestGuess(complexType);
         }
 
@@ -133,6 +173,52 @@ public class VariableDefinition {
     }
 
     /**
+     * Helper method to get a ClassName from a string.
+     * Handles both simple and fully qualified class names.
+     *
+     * @param className The class name as a string
+     * @return The ClassName object
+     */
+    private ClassName getClassName(String className) {
+        className = className.trim();
+
+        // Check for primitives and their wrappers
+        switch (className) {
+            case "String":
+                return ClassName.get(String.class);
+            case "Integer":
+            case "int":
+                return ClassName.get(Integer.class);
+            case "Boolean":
+            case "boolean":
+                return ClassName.get(Boolean.class);
+            case "Double":
+            case "double":
+                return ClassName.get(Double.class);
+            case "Long":
+            case "long":
+                return ClassName.get(Long.class);
+            case "Float":
+            case "float":
+                return ClassName.get(Float.class);
+            case "BigDecimal":
+                return ClassName.get("java.math", "BigDecimal");
+            case "Object":
+                return ClassName.get(Object.class);
+        }
+
+        // Handle fully qualified names
+        if (className.contains(".")) {
+            String packageName = className.substring(0, className.lastIndexOf('.'));
+            String simpleName = className.substring(className.lastIndexOf('.') + 1);
+            return ClassName.get(packageName, simpleName);
+        }
+
+        // Fallback to best guess
+        return ClassName.bestGuess(className);
+    }
+
+    /**
      * Get the set of imports needed for this variable type.
      *
      * @return Set of imports as fully qualified class names
@@ -147,9 +233,32 @@ public class VariableDefinition {
 
         // For complex types
         if ("complex".equalsIgnoreCase(type) && complexType != null) {
-            if (complexType.contains(".")) {
+            // Handle generic types
+            Matcher matcher = GENERIC_PATTERN.matcher(complexType);
+            if (matcher.matches()) {
+                String rawType = matcher.group(1);
+                String typeParameter = matcher.group(2);
+
+                // Add import for raw type
+                if (rawType.contains(".")) {
+                    imports.add(rawType);
+                } else if (rawType.equals("List")) {
+                    imports.add("java.util.List");
+                } else if (rawType.equals("Map")) {
+                    imports.add("java.util.Map");
+                }
+
+                // Add imports for type parameters
+                for (String param : typeParameter.split(",")) {
+                    param = param.trim();
+                    if (param.contains(".")) {
+                        imports.add(param);
+                    }
+                }
+            } else if (complexType.contains(".")) {
                 imports.add(complexType);
             }
+
             return imports;
         }
 
@@ -172,7 +281,7 @@ public class VariableDefinition {
                 break;
             default:
                 // For custom types that may contain a package
-                if (type != null && type.contains(".")) {
+                if (type.contains(".")) {
                     imports.add(type);
                 }
                 break;

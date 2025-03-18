@@ -1,11 +1,14 @@
 package com.example.email.generator;
 
 import com.example.email.core.generator.EmailDefinition;
+import com.example.email.core.generator.SectionDefinition;
+import com.example.email.core.generator.VariableDefinition;
 import com.example.email.core.model.Email;
 import com.example.email.core.service.EmailConfig;
 import com.example.email.core.service.EmailTemplateService;
 import com.example.email.core.template.TemplateEngine;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
@@ -18,7 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Updated EmailServiceGenerator with fix for content section model structure
+ */
 public class EmailServiceGenerator {
+    // Existing fields
     private final File outputDirectory;
     private final String packageName;
     private final String serviceClassName;
@@ -42,6 +49,7 @@ public class EmailServiceGenerator {
     }
 
     public void generateEmailService(List<EmailDefinition> definitions) throws IOException {
+        // Same implementation as before
         logger.info("Generating email service class: " + serviceClassName);
 
         TypeSpec.Builder serviceBuilder = TypeSpec.classBuilder(serviceClassName)
@@ -63,12 +71,22 @@ public class EmailServiceGenerator {
             // Generate parameter class for this email type
             ClassName paramClassName = parameterClassGenerator.generateParameterClass(email);
 
+            // Generate section parameter classes for each section with variables
+            Map<String, ClassName> sectionParamClasses = new HashMap<>();
+            for (SectionDefinition section : email.getSectionDefinitions()) {
+                if (section.getVariables() != null && !section.getVariables().isEmpty()) {
+                    String sectionClassName = section.getParameterClassName(email.getIdentifier());
+                    sectionParamClasses.put(section.getName(),
+                            ClassName.get(packageName, sectionClassName));
+                }
+            }
+
             // Generate service method with parameter class
-            generateServiceMethod(serviceBuilder, email, paramClassName);
+            generateServiceMethod(serviceBuilder, email, paramClassName, sectionParamClasses);
 
             // Generate render method if needed
             if (includeRenderMethod) {
-                generateRenderMethod(serviceBuilder, email, paramClassName);
+                generateRenderMethod(serviceBuilder, email, paramClassName, sectionParamClasses);
             }
         }
 
@@ -79,10 +97,15 @@ public class EmailServiceGenerator {
         logger.info("Generated email service class: " + serviceClassName);
     }
 
+    /**
+     * Generate service method with improved model structure
+     * FIXED: Content section variables are put at top level for better template access
+     */
     private void generateServiceMethod(
             TypeSpec.Builder serviceBuilder,
             EmailDefinition email,
-            ClassName paramClassName) {
+            ClassName paramClassName,
+            Map<String, ClassName> sectionParamClasses) {
 
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(email.getMethodName())
                 .addModifiers(Modifier.PUBLIC)
@@ -93,39 +116,81 @@ public class EmailServiceGenerator {
                 .addJavadoc("@param params The parameters for this email template\n")
                 .addJavadoc("@return An email builder configured with the template content\n");
 
-        // Create the method body
-        methodBuilder.addStatement("$T<$T, $T> model = new $T<>()",
-                Map.class, String.class, Object.class, HashMap.class);
+        // Create method body with better structure
+        CodeBlock.Builder codeBlockBuilder = CodeBlock.builder()
+                .addStatement("$T<$T, $T> model = new $T<>()",
+                        Map.class, String.class, Object.class, HashMap.class);
 
-        // Add variables to model from params
-        for (int i = 0; i < email.getVariables().size(); i++) {
-            String varName = email.getVariables().get(i).getName();
-            methodBuilder.addStatement("model.put($S, params.get$L())",
-                    varName, capitalizeFirst(varName));
+        // Add main variables to model - these go at the top level
+        for (VariableDefinition var : email.getVariables()) {
+            codeBlockBuilder.addStatement("model.put($S, params.get$L())",
+                    var.getName(), capitalizeFirst(var.getName()));
         }
 
-        // Set subject
-        methodBuilder.addStatement("$T actualSubject = params.getSubject() != null ? params.getSubject() : $S",
-                ClassName.get(String.class), email.getSubject());
-        methodBuilder.addStatement("model.put($S, actualSubject)", "subject");
+        // Add section parameters - special handling for 'content' section
+        for (Map.Entry<String, ClassName> entry : sectionParamClasses.entrySet()) {
+            String sectionName = entry.getKey();
+            SectionDefinition section = email.getSectionDefinition(sectionName).orElse(null);
 
-        // Process template and return Email builder
-        methodBuilder.addStatement("$T content = processTemplate($S, model)",
-                ClassName.get(String.class),
-                email.getTemplatePath());
+            if (section != null && section.getVariables() != null && !section.getVariables().isEmpty()) {
+                codeBlockBuilder.beginControlFlow("if (params.get$LParams() != null)", capitalizeFirst(sectionName));
 
-        methodBuilder.addStatement("return createEmailBuilder()" +
-                "\n                .subject(actualSubject)" +
-                "\n                .content(content)" +
-                "\n                .html(true)");
+                // FIXED: For 'content' section, put variables directly in top level of model
+                // This aligns with template expectations of ${variableName} in content section
+                if ("content".equals(sectionName)) {
+                    // Add content section variables directly to model top level
+                    for (VariableDefinition var : section.getVariables()) {
+                        codeBlockBuilder.addStatement("model.put($S, params.get$LParams().get$L())",
+                                var.getName(), // Note: No section prefix here
+                                capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
+                    }
+                } else {
+                    // For other sections, create section map as before
+                    codeBlockBuilder.addStatement("$T<$T, $T> $LMap = new $T<>()",
+                            Map.class, String.class, Object.class,
+                            sectionName, HashMap.class);
 
+                    // Add all section variables to the section map
+                    for (VariableDefinition var : section.getVariables()) {
+                        codeBlockBuilder.addStatement("$LMap.put($S, params.get$LParams().get$L())",
+                                sectionName, var.getName(),
+                                capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
+                    }
+
+                    // Add the section map to the model
+                    codeBlockBuilder.addStatement("model.put($S, $LMap)", sectionName, sectionName);
+                }
+
+                codeBlockBuilder.endControlFlow();
+            }
+        }
+
+        // Set subject (top level variable)
+        codeBlockBuilder.addStatement("String actualSubject = params.getSubject() != null ? params.getSubject() : $S",
+                        email.getSubject())
+                .addStatement("model.put($S, actualSubject)", "subject");
+
+        // Process template and create email
+        codeBlockBuilder.addStatement("String content = processTemplate($S, model)",
+                        email.getTemplatePath())
+                .addStatement("return createEmailBuilder()" +
+                        "\n        .subject(actualSubject)" +
+                        "\n        .content(content)" +
+                        "\n        .html(true)");
+
+        methodBuilder.addCode(codeBlockBuilder.build());
         serviceBuilder.addMethod(methodBuilder.build());
     }
 
+    /**
+     * Generate render method with improved model structure
+     * FIXED: Content section variables are put at top level for better template access
+     */
     private void generateRenderMethod(
             TypeSpec.Builder serviceBuilder,
             EmailDefinition email,
-            ClassName paramClassName) {
+            ClassName paramClassName,
+            Map<String, ClassName> sectionParamClasses) {
 
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(email.getRenderMethodName())
                 .addModifiers(Modifier.PUBLIC)
@@ -135,28 +200,66 @@ public class EmailServiceGenerator {
                 .addJavadoc("@param params The parameters for this email template\n")
                 .addJavadoc("@return The rendered HTML content\n");
 
-        // Create the method body
-        methodBuilder.addStatement("$T<$T, $T> model = new $T<>()",
-                Map.class, String.class, Object.class, HashMap.class);
+        // Create method body with same structure as service method
+        CodeBlock.Builder codeBlockBuilder = CodeBlock.builder()
+                .addStatement("$T<$T, $T> model = new $T<>()",
+                        Map.class, String.class, Object.class, HashMap.class);
 
-        // Add variables to model from params
-        for (int i = 0; i < email.getVariables().size(); i++) {
-            String varName = email.getVariables().get(i).getName();
-            methodBuilder.addStatement("model.put($S, params.get$L())",
-                    varName, capitalizeFirst(varName));
+        // Add main variables to model
+        for (VariableDefinition var : email.getVariables()) {
+            codeBlockBuilder.addStatement("model.put($S, params.get$L())",
+                    var.getName(), capitalizeFirst(var.getName()));
         }
 
-        // Set subject if available
-        methodBuilder.addStatement("if (params.getSubject() != null) {");
-        methodBuilder.addStatement("    model.put($S, params.getSubject())", "subject");
-        methodBuilder.addStatement("} else {");
-        methodBuilder.addStatement("    model.put($S, $S)", "subject", email.getSubject());
-        methodBuilder.addStatement("}");
+        // Add section parameters - special handling for 'content' section
+        for (Map.Entry<String, ClassName> entry : sectionParamClasses.entrySet()) {
+            String sectionName = entry.getKey();
+            SectionDefinition section = email.getSectionDefinition(sectionName).orElse(null);
+
+            if (section != null && section.getVariables() != null && !section.getVariables().isEmpty()) {
+                codeBlockBuilder.beginControlFlow("if (params.get$LParams() != null)", capitalizeFirst(sectionName));
+
+                // FIXED: For 'content' section, put variables directly in top level of model
+                if ("content".equals(sectionName)) {
+                    // Add content section variables directly to model top level
+                    for (VariableDefinition var : section.getVariables()) {
+                        codeBlockBuilder.addStatement("model.put($S, params.get$LParams().get$L())",
+                                var.getName(), // Note: No section prefix here
+                                capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
+                    }
+                } else {
+                    // For other sections, create section map as before
+                    codeBlockBuilder.addStatement("$T<$T, $T> $LMap = new $T<>()",
+                            Map.class, String.class, Object.class,
+                            sectionName, HashMap.class);
+
+                    // Add all section variables to the section map
+                    for (VariableDefinition var : section.getVariables()) {
+                        codeBlockBuilder.addStatement("$LMap.put($S, params.get$LParams().get$L())",
+                                sectionName, var.getName(),
+                                capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
+                    }
+
+                    // Add the section map to the model
+                    codeBlockBuilder.addStatement("model.put($S, $LMap)", sectionName, sectionName);
+                }
+
+                codeBlockBuilder.endControlFlow();
+            }
+        }
+
+        // Set subject
+        codeBlockBuilder.beginControlFlow("if (params.getSubject() != null)")
+                .addStatement("model.put($S, params.getSubject())", "subject")
+                .nextControlFlow("else")
+                .addStatement("model.put($S, $S)", "subject", email.getSubject())
+                .endControlFlow();
 
         // Process template and return content
-        methodBuilder.addStatement("return processTemplate($S, model)",
+        codeBlockBuilder.addStatement("return processTemplate($S, model)",
                 email.getTemplatePath());
 
+        methodBuilder.addCode(codeBlockBuilder.build());
         serviceBuilder.addMethod(methodBuilder.build());
     }
 

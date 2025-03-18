@@ -1,6 +1,5 @@
 package com.example.app.controller;
 
-
 import com.example.app.model.OrderItem;
 import com.example.app.service.EmailService;
 import lombok.Getter;
@@ -47,15 +46,21 @@ public class EmailController {
     }
 
     @PostMapping("/order-confirmation")
-    public ResponseEntity<Map<String, String>> sendOrderConfirmationEmail(@RequestBody OrderConfirmationRequest request) {
-        if (request.getEmail() == null || request.getName() == null || request.getItems() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email, name, and items are required"));
+    public ResponseEntity<Map<String, String>> sendOrderConfirmationEmail(
+            @RequestBody OrderConfirmationRequest request) {
+        if (request.getEmail() == null || request.getName() == null ||
+                request.getItems() == null || request.getShippingAddress() == null ||
+                request.getShippingMethod() == null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "Email, name, items, shipping address and shipping method are required"));
         }
 
         emailService.sendOrderConfirmationEmail(
                 request.getEmail(),
                 request.getName(),
-                request.getItems()
+                request.getItems(),
+                request.getShippingAddress(),
+                request.getShippingMethod()
         );
 
         return ResponseEntity.ok(Map.of("message", "Order confirmation email sent successfully"));
@@ -66,5 +71,7 @@ public class EmailController {
         private String email;
         private String name;
         private List<OrderItem> items;
+        private String shippingAddress;
+        private String shippingMethod;
     }
 }

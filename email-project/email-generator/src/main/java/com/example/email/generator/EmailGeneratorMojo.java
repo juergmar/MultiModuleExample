@@ -35,6 +35,30 @@ public class EmailGeneratorMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean useLombok;
 
+    /**
+     * Path to the base layout template file.
+     * This template will be used as a blueprint for all generated email templates.
+     * If not specified, the original templateText from the email definition will be used.
+     */
+    @Parameter
+    private File baseLayoutFile;
+
+    /**
+     * Whether to use base layout sections.
+     * If true, the generator will extract sections from the base layout and allow replacing them.
+     * If false, the original templateText will be used directly.
+     */
+    @Parameter(defaultValue = "true")
+    private boolean useBaseLayoutSections;
+
+    /**
+     * Default section name to use when templateText doesn't define sections.
+     * When using base layout sections, this is the section name where templateText content
+     * will be placed if no explicit sections are defined.
+     */
+    @Parameter(defaultValue = "content")
+    private String defaultSectionName;
+
     @Override
     public void execute() throws MojoExecutionException {
         GeneratorLogger logger = new MavenGeneratorLogger(getLog());
@@ -52,7 +76,23 @@ public class EmailGeneratorMojo extends AbstractMojo {
 
             // Initialize components
             EmailDefinitionReader definitionReader = new EmailDefinitionReader(definitionsFile, logger);
-            TemplateFileGenerator templateGenerator = new TemplateFileGenerator(resourcesDirectory, logger);
+
+            // Create template generator with baseLayoutFile if specified
+            TemplateFileGenerator templateGenerator;
+            if (baseLayoutFile != null && baseLayoutFile.exists() && useBaseLayoutSections) {
+                templateGenerator = new TemplateFileGenerator(
+                        resourcesDirectory,
+                        baseLayoutFile,
+                        defaultSectionName,
+                        logger);
+
+                // Set to use dot notation (no constructor change needed)
+                templateGenerator.setUseDotNotation(true);
+            } else {
+                templateGenerator = new TemplateFileGenerator(resourcesDirectory, logger);
+                templateGenerator.setUseDotNotation(true);
+            }
+
             ParameterClassGenerator parameterClassGenerator = new ParameterClassGenerator(
                     outputDirectory, packageName, nullableAnnotation, useLombok, logger);
             EmailServiceGenerator serviceGenerator = new EmailServiceGenerator(

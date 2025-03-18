@@ -34,7 +34,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Add javax.annotation-api for @Nullable -->
+        <!-- Add jakarta.annotation-api for @Nullable -->
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
@@ -60,6 +60,11 @@
                             <packageName>com.example.email.example.generated</packageName>
                             <serviceClassName>ExampleEmailService</serviceClassName>
                             <useLombok>false</useLombok>
+
+                            <!-- Base layout configuration -->
+                            <baseLayoutFile>${project.basedir}/src/main/resources/templates/email/base-layout.html</baseLayoutFile>
+                            <useBaseLayoutSections>true</useBaseLayoutSections>
+                            <defaultSectionName>content</defaultSectionName>
                         </configuration>
                     </execution>
                 </executions>

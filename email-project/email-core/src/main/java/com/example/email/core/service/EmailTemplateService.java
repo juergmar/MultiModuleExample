@@ -24,24 +24,11 @@ public abstract class EmailTemplateService {
      * @return The processed template content
      */
     protected String processTemplate(String templateName, Map<String, Object> model) {
-        // Create a copy to avoid modifying the original
-        Map<String, Object> templateModel = new HashMap<>(model);
-
-        // Add any additional template attributes
-        prepareTemplateModel(templateModel);
-
-        return templateEngine.process(templateName, templateModel);
+        // Transform the flat dot notation model into a nested structure
+        // No need for additional transformation - the model is already structured correctly
+        return templateEngine.process(templateName, model);
     }
 
-    /**
-     * Prepare the template model before processing.
-     * This method can be overridden by subclasses to add custom attributes.
-     *
-     * @param model The model to prepare
-     */
-    protected void prepareTemplateModel(Map<String, Object> model) {
-        // Base implementation does nothing
-    }
 
     /**
      * Create a basic email builder with from address set
