@@ -1,0 +1,83 @@
+{
+  "emails": [
+    {
+      "identifier": "welcome",
+      "subject": "Welcome to Our Application",
+      "templateText": "<div style=\"font-family: Arial, sans-serif;\">\n  <h2>Welcome, <span th:text=\"${userName}\">User</span>!</h2>\n  \n  <p>Thank you for joining our application. We're excited to have you on board!</p>\n  \n  <p>Your account has been created with the following email: <strong th:text=\"${email}\">user@example.com</strong>.</p>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a th:href=\"${activationUrl}\" style=\"background-color: #4CAF50; color: white; padding: 15px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;\">Activate Your Account</a>\n  </div>\n  \n  <p>This link will expire in <span th:text=\"${expiryHours}\">24</span> hours.</p>\n  \n  <p>If you didn't create this account, please ignore this email.</p>\n  \n  <p>Best regards,<br>The Team</p>\n</div>",
+      "variables": [
+        {
+          "name": "userName",
+          "type": "String",
+          "description": "The user's full name or username"
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "description": "The user's email address"
+        },
+        {
+          "name": "activationUrl",
+          "type": "String",
+          "description": "The URL for account activation"
+        },
+        {
+          "name": "expiryHours",
+          "type": "Integer",
+          "description": "Number of hours until the activation link expires",
+          "required": false
+        }
+      ]
+    },
+    {
+      "identifier": "passwordReset",
+      "subject": "Password Reset Request",
+      "templateText": "<div style=\"font-family: Arial, sans-serif;\">\n  <h2>Password Reset Request</h2>\n  \n  <p>We received a request to reset the password for your account.</p>\n  \n  <p>Click the button below to reset your password. This link will expire in <span th:text=\"${expiryMinutes}\">30</span> minutes.</p>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a th:href=\"${resetUrl}\" style=\"background-color: #2196F3; color: white; padding: 15px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;\">Reset Password</a>\n  </div>\n  \n  <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>\n  \n  <p>Best regards,<br>The Team</p>\n</div>",
+      "variables": [
+        {
+          "name": "resetUrl",
+          "type": "String",
+          "description": "The URL for password reset"
+        },
+        {
+          "name": "expiryMinutes",
+          "type": "Integer",
+          "description": "Number of minutes until the reset link expires",
+          "required": true
+        }
+      ]
+    },
+    {
+      "identifier": "orderConfirmation",
+      "subject": "Order Confirmation",
+      "templateText": "<div style=\"font-family: Arial, sans-serif;\">\n  <h2>Order Confirmation</h2>\n  \n  <p>Dear <span th:text=\"${customerName}\">Customer</span>,</p>\n  \n  <p>Thank you for your order! We're pleased to confirm that we've received your order <strong th:text=\"${orderNumber}\">#12345</strong>.</p>\n  \n  <table style=\"width: 100%; border-collapse: collapse; margin: 20px 0;\">\n    <tr style=\"background-color: #f2f2f2;\">\n      <th style=\"border: 1px solid #ddd; padding: 8px; text-align: left;\">Item</th>\n      <th style=\"border: 1px solid #ddd; padding: 8px; text-align: left;\">Quantity</th>\n      <th style=\"border: 1px solid #ddd; padding: 8px; text-align: right;\">Price</th>\n    </tr>\n    <tr th:each=\"item : ${items}\">\n      <td style=\"border: 1px solid #ddd; padding: 8px;\" th:text=\"${item.productName}\">Product Name</td>\n      <td style=\"border: 1px solid #ddd; padding: 8px;\" th:text=\"${item.quantity}\">1</td>\n      <td style=\"border: 1px solid #ddd; padding: 8px; text-align: right;\" th:text=\"${#numbers.formatCurrency(item.price)}\">$19.99</td>\n    </tr>\n  </table>\n  \n  <p style=\"text-align: right;\"><strong>Total: </strong><span th:text=\"${#numbers.formatCurrency(orderTotal)}\">$19.99</span></p>\n  \n  <p>Your order will be processed shortly.</p>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a th:href=\"${trackingUrl}\" style=\"background-color: #FF9800; color: white; padding: 15px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;\">Track Your Order</a>\n  </div>\n  \n  <p>Thank you for shopping with us!</p>\n  \n  <p>Best regards,<br>The Team</p>\n</div>",
+      "variables": [
+        {
+          "name": "customerName",
+          "type": "String",
+          "description": "The customer's full name"
+        },
+        {
+          "name": "orderNumber",
+          "type": "String",
+          "description": "The order reference number"
+        },
+        {
+          "name": "items",
+          "type": "complex[]",
+          "complexType": "com.example.app.model.OrderItem",
+          "description": "List of items in the order"
+        },
+        {
+          "name": "orderTotal",
+          "type": "BigDecimal",
+          "description": "The total order amount"
+        },
+        {
+          "name": "trackingUrl",
+          "type": "String",
+          "description": "URL to track the order"
+        }
+      ]
+    }
+  ]
+}

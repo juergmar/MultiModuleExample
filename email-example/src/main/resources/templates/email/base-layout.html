@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${subject}">Email Subject</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background-color: #4285f4;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+            background-color: #ffffff;
+        }
+        .footer {
+            font-size: 12px;
+            text-align: center;
+            color: #999999;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-top: 1px solid #eeeeee;
+        }
+
+        /* Responsive styles */
+        @media screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+            }
+            .content {
+                padding: 15px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1 th:text="${subject}">Email Subject</h1>
+    </div>
+    <div class="content">
+        <!-- Content provided by each email template -->
+        <th:block th:if="${content}" th:utext="${content}">
+            Default content goes here
+        </th:block>
+    </div>
+    <div class="footer">
+        <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2023</span>
+            <span th:text="${companyName ?: 'Example Company'}">Example Company</span>. All rights reserved.</p>
+        <p>This email was sent to you because you are registered with our service.</p>
+        <p>If you don't want to receive these emails, you can
+            <a href="#" style="color: #999999;">unsubscribe</a> at any time.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    check-template-location: true
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  mail:
+    host: localhost  # or your actual SMTP host
+    port: 1026       # standard port for testing mail servers
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+      mail.debug: true
+
+email:
+  fromAddress: noreply@example.com
+  baseUrl: http://localhost:8080
+  companyName: Example Company
+  enabled: true
+
+
+# Debug to see which templates are resolved
+logging:
+  level:
+    org.thymeleaf: DEBUG

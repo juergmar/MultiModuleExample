@@ -1,29 +1,56 @@
-# docker-compose.yml
 version: '3.8'
+
 services:
+  # PostgreSQL for CustomerB
   postgres:
-    image: postgres:15
-    container_name: postgres_default
+    image: postgres:16
+    container_name: postgres
     environment:
+      POSTGRES_DB: customerb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: defaultdb
     ports:
-      - "5555:5432"
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # Oracle DB for CustomerA (using container-registry.oracle.com/database/express:latest)
   oracle:
-    image: gvenzl/oracle-xe:latest
-    container_name: oracle_customerA
+    image: container-registry.oracle.com/database/express:latest
+    container_name: oracle
     environment:
-      ORACLE_PASSWORD: oracle
+      ORACLE_PWD: oracle
+      ORACLE_CHARACTERSET: AL32UTF8
     ports:
       - "1521:1521"
       - "5500:5500"
     volumes:
-      - oracle_data:/opt/oracle/oradata
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "sqlplus", "-L", "system/oracle@//localhost:1521/XE", "AS", "SYSDBA", "SELECT", "1", "FROM", "DUAL"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Mailpit for email testing
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "1026:1025"  # SMTP port
+      - "8026:8025"  # Web UI port
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"  # Accept any auth credentials
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"  # Allow insecure authentication
+    volumes:
+      - mailpit-data:/data
 
 volumes:
-  postgres_data:
-  oracle_data:
+  postgres-data:
+  oracle-data:
+  mailpit-data:
