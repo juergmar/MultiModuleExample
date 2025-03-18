@@ -13,8 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Improved TemplateFileGenerator with proper handling of inline variables in content sections
- * and preservation of Thymeleaf attribute values.
+ * Simplified TemplateFileGenerator that preserves Thymeleaf syntax from email definitions.
+ * This generator assumes that email definitions already contain proper Thymeleaf syntax
+ * and simply processes section references based on the model structure.
  */
 public class TemplateFileGenerator {
     private final File resourcesDirectory;
@@ -25,9 +26,6 @@ public class TemplateFileGenerator {
 
     // Flag to control variable notation format
     private boolean useDotNotation = true;
-
-    // Marker used to temporarily replace ${} expressions during processing
-    private static final String DOLLAR_MARKER = "###DOLLAR###";
 
     /**
      * Create a template generator without base layout.
@@ -119,11 +117,13 @@ public class TemplateFileGenerator {
                     logger.warn("Email definition '" + email.getIdentifier() + "' has no template text");
                     content = "<div>No content defined for this email template.</div>";
                 }
-                content = processTemplateContent(content, null);
+
+                // Only adjust variable paths based on section context
+                content = processSectionVariables(content, null);
             }
 
-            // Clean Thymeleaf syntax
-            content = cleanThymeleafSyntax(content);
+            // Apply fix for double nested references
+            content = fixDoubleNestedReferences(content);
 
             // Write the template file
             writer.write(content);
@@ -132,6 +132,40 @@ public class TemplateFileGenerator {
             throw e;
         }
     }
+
+    /**
+     * Fix double nested references in the template content
+     * This method transforms ${section.section.variable} to ${section.variable}
+     *
+     * @param content The original template content
+     * @return The fixed template content
+     */
+    private String fixDoubleNestedReferences(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+
+        // Replace patterns like ${section.section.variable} with ${section.variable}
+        // First, identify common sections that might have this issue
+        String[] sectionNames = {"orderSummary", "shipping", "tracking"};
+
+        for (String section : sectionNames) {
+            // Fix section.section.variable pattern
+            String doubleNestPattern = "\\$\\{" + section + "\\." + section + "\\.([^}]+)\\}";
+            String singleNestReplacement = "\\${" + section + ".$1}";
+            content = content.replaceAll(doubleNestPattern, singleNestReplacement);
+
+            // Fix specific item access pattern in loops
+            // From: th:each="item : ${section.section.items}" with ${section.item.property}
+            // To: th:each="item : ${section.items}" with ${item.property}
+            String itemAccessPattern = "\\$\\{" + section + "\\.item\\.([^}]+)\\}";
+            String itemAccessReplacement = "\\${item.$1}";
+            content = content.replaceAll(itemAccessPattern, itemAccessReplacement);
+        }
+
+        return content;
+    }
+
 
     /**
      * Process an email definition with the base layout
@@ -144,7 +178,7 @@ public class TemplateFileGenerator {
         if (sectionDefs != null && !sectionDefs.isEmpty()) {
             for (SectionDefinition sectionDef : sectionDefs) {
                 if (sectionDef.getContent() != null && !sectionDef.getContent().isEmpty()) {
-                    String sectionContent = processTemplateContent(sectionDef.getContent(), sectionDef.getName());
+                    String sectionContent = processSectionVariables(sectionDef.getContent(), sectionDef.getName());
                     sectionContents.put(sectionDef.getName(), sectionContent);
                 }
             }
@@ -156,7 +190,7 @@ public class TemplateFileGenerator {
             for (Map.Entry<String, String> entry : sections.entrySet()) {
                 // Only add if not already added from section definitions
                 if (!sectionContents.containsKey(entry.getKey())) {
-                    String sectionContent = processTemplateContent(entry.getValue(), entry.getKey());
+                    String sectionContent = processSectionVariables(entry.getValue(), entry.getKey());
                     sectionContents.put(entry.getKey(), sectionContent);
                 }
             }
@@ -165,7 +199,7 @@ public class TemplateFileGenerator {
         // If there's a template text but no content section, add it to default section
         if ((sectionContents.isEmpty() || !sectionContents.containsKey(defaultSectionName))
                 && email.getTemplateText() != null && !email.getTemplateText().isEmpty()) {
-            String content = processTemplateContent(email.getTemplateText(), defaultSectionName);
+            String content = processSectionVariables(email.getTemplateText(), defaultSectionName);
             sectionContents.put(defaultSectionName, content);
         }
 
@@ -173,95 +207,36 @@ public class TemplateFileGenerator {
     }
 
     /**
-     * Process template content with variable formatting
+     * Process section variables by adapting variable paths based on section context.
+     * This is a simplified version that only adjusts variable paths without trying to convert syntax.
      */
-    private String processTemplateContent(String content, String sectionName) {
-        if (content == null || content.isEmpty()) {
-            return "";
-        }
-
-        // First, protect Thymeleaf attributes from being modified
-        content = protectThymeleafAttributes(content);
-
-        // Process variables based on section
-        content = processVariablesWithMarker(content, sectionName);
-
-        // Convert inline ${...} references to proper Thymeleaf syntax
-        content = convertInlineVariablesToThymeleafSyntax(content);
-
-        // Restore protected Thymeleaf attributes
-        content = restoreProtectedAttributes(content);
-
-        return content;
-    }
-
-    // Map to store protected attributes
-    private final Map<String, String> protectedAttributes = new HashMap<>();
-    private int protectionCounter = 0;
-    private static final String PROTECT_MARKER = "###PROTECT###";
-
-    /**
-     * Protect Thymeleaf attributes from being modified by subsequent processing
-     */
-    private String protectThymeleafAttributes(String content) {
-        protectedAttributes.clear();
-        protectionCounter = 0;
-
-        // Pattern to match any Thymeleaf attributes (th:*="...")
-        Pattern thAttrPattern = Pattern.compile("(th:[^=]+=\"[^\"]*\\$\\{[^\"]*\\}[^\"]*\")");
-        Matcher matcher = thAttrPattern.matcher(content);
-
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            String attrValue = matcher.group(1);
-            String marker = PROTECT_MARKER + (protectionCounter++) + "#";
-            protectedAttributes.put(marker, attrValue);
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(marker));
-        }
-        matcher.appendTail(sb);
-
-        return sb.toString();
-    }
-
-    /**
-     * Restore protected Thymeleaf attributes
-     */
-    private String restoreProtectedAttributes(String content) {
-        String result = content;
-        for (Map.Entry<String, String> entry : protectedAttributes.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
-        }
-        return result;
-    }
-
-    /**
-     * Convert inline ${...} variable references to proper Thymeleaf syntax
-     * This only processes references that are not inside Thymeleaf attributes
-     */
-    private String convertInlineVariablesToThymeleafSyntax(String content) {
-        // No processing needed for empty content
-        if (content == null || content.isEmpty()) {
+    private String processSectionVariables(String content, String sectionName) {
+        if (content == null || content.isEmpty() || !useDotNotation || sectionName == null) {
             return content;
         }
 
-        // Find text nodes with ${...} expressions
-        Pattern inlineVarPattern = Pattern.compile("\\$\\{([a-zA-Z0-9_\\.]+)\\}");
-        Matcher matcher = inlineVarPattern.matcher(content);
+        // Find all ${variable} expressions and adjust paths based on section context
+        Pattern varPattern = Pattern.compile("\\$\\{([a-zA-Z0-9_]+)((?:\\.[a-zA-Z0-9_]+)*)\\}");
+        Matcher matcher = varPattern.matcher(content);
 
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
-            // Check if this is protected (already in a Thymeleaf attribute)
-            String matchedText = matcher.group(0);
-            String varName = matcher.group(1);
+            String rootVar = matcher.group(1);
+            String remainingPath = matcher.group(2);
 
-            // Skip if it's in a marker (protected attribute)
-            if (isInProtectedArea(content, matcher.start())) {
-                matcher.appendReplacement(result, Matcher.quoteReplacement(matchedText));
+            // Skip if variable already has a prefix or is a special Thymeleaf variable
+            if (rootVar.contains(".") || isThymeleafSpecialVariable(rootVar)) {
                 continue;
             }
 
-            // Replace with Thymeleaf span
-            String replacement = "<span th:text=\"${" + varName + "}\">Placeholder</span>";
+            // Content section variables are at top level
+            if ("content".equals(sectionName)) {
+                // Leave content variables as-is, they're already at top level
+                continue;
+            }
+
+            // Add section prefix for other sections
+            String replacement = "${" + sectionName + "." + rootVar + remainingPath + "}";
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(result);
@@ -270,115 +245,14 @@ public class TemplateFileGenerator {
     }
 
     /**
-     * Check if the position is inside a protected area
+     * Check if a variable is a special Thymeleaf variable that should not be prefixed.
      */
-    private boolean isInProtectedArea(String content, int position) {
-        // Check if the position is within a protected marker
-        for (String marker : protectedAttributes.keySet()) {
-            int markerPos = content.indexOf(marker);
-            if (markerPos >= 0 && position >= markerPos && position < markerPos + marker.length()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Process variables in template content using a marker approach to avoid regex issues
-     */
-    private String processVariablesWithMarker(String content, String sectionName) {
-        // First, extract all ${...} expressions and replace with markers
-        Pattern varPattern = Pattern.compile("\\$\\{([a-zA-Z0-9_\\.]+)\\}");
-        Matcher matcher = varPattern.matcher(content);
-
-        StringBuffer tempResult = new StringBuffer();
-        int counter = 0;
-        Map<String, String> markers = new HashMap<>();
-
-        while (matcher.find()) {
-            String varName = matcher.group(1);
-            String finalVarName = varName;
-
-            // Skip if in protected area
-            if (isInProtectedArea(content, matcher.start())) {
-                matcher.appendReplacement(tempResult, Matcher.quoteReplacement(matcher.group(0)));
-                continue;
-            }
-
-            // Handle variables in content section
-            if (useDotNotation && sectionName != null && !varName.contains(".")) {
-                // Special handling for content section
-                if ("content".equals(sectionName)) {
-                    // For content section, don't add any section prefix - these are at top level
-                    finalVarName = varName;
-                } else {
-                    // Normal case for other sections
-                    finalVarName = sectionName + "." + varName;
-                }
-            }
-
-            // Create a unique marker
-            String marker = DOLLAR_MARKER + counter++ + "#";
-            markers.put(marker, "${" + finalVarName + "}");
-
-            // Replace with marker
-            matcher.appendReplacement(tempResult, Matcher.quoteReplacement(marker));
-        }
-        matcher.appendTail(tempResult);
-
-        // Now replace all markers with the actual expressions
-        String result = tempResult.toString();
-        for (Map.Entry<String, String> entry : markers.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
-        }
-
-        return result;
-    }
-
-    /**
-     * Clean Thymeleaf syntax to prevent common errors
-     */
-    private String cleanThymeleafSyntax(String content) {
-        // Remove duplicate th: prefixes
-        content = content.replace("th:th:", "th:");
-
-        // Fix @{${...}} pattern which is invalid in Thymeleaf
-        Pattern invalidPattern = Pattern.compile("th:href=\"@\\{\\$\\{([^}]+)\\}\\}\"");
-        Matcher matcher = invalidPattern.matcher(content);
-
-        StringBuffer tempResult = new StringBuffer();
-        while (matcher.find()) {
-            String varName = matcher.group(1);
-            matcher.appendReplacement(tempResult, "th:href=\"${" + varName + "}\"");
-        }
-        matcher.appendTail(tempResult);
-
-        // Fix variables that are already prefixed with content. in content section
-        return fixContentPrefixedVariables(tempResult.toString());
-    }
-
-    /**
-     * Fix variables that already have content. prefix in content section
-     */
-    private String fixContentPrefixedVariables(String content) {
-        // Find all ${content.X} patterns in the content section
-        Pattern contentVarPattern = Pattern.compile("\\$\\{content\\.([a-zA-Z0-9_]+)\\}");
-        Matcher matcher = contentVarPattern.matcher(content);
-
-        StringBuffer tempResult = new StringBuffer();
-
-        // Determine if we're using a model structure where content vars are at top level
-        boolean contentVarsAtTopLevel = true; // Set this based on your model structure
-
-        if (contentVarsAtTopLevel) {
-            while (matcher.find()) {
-                String varName = matcher.group(1);
-                matcher.appendReplacement(tempResult, "${" + varName + "}"); // Remove content. prefix
-            }
-            matcher.appendTail(tempResult);
-            return tempResult.toString();
-        }
-
-        return content; // No changes needed if contentVarsAtTopLevel is false
+    private boolean isThymeleafSpecialVariable(String varName) {
+        // These are special Thymeleaf variables that should not be prefixed
+        return varName.equals("subject") ||
+                varName.equals("companyName") ||
+                varName.startsWith("#") || // Thymeleaf utility objects like #dates
+                varName.equals("this") ||
+                varName.equals("root");
     }
 }

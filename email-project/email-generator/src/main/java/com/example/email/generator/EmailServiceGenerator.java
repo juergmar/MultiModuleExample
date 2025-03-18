@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Updated EmailServiceGenerator with fix for content section model structure
+ * Updated EmailServiceGenerator with simplified model structure
  */
 public class EmailServiceGenerator {
     // Existing fields
@@ -49,7 +49,6 @@ public class EmailServiceGenerator {
     }
 
     public void generateEmailService(List<EmailDefinition> definitions) throws IOException {
-        // Same implementation as before
         logger.info("Generating email service class: " + serviceClassName);
 
         TypeSpec.Builder serviceBuilder = TypeSpec.classBuilder(serviceClassName)
@@ -98,8 +97,7 @@ public class EmailServiceGenerator {
     }
 
     /**
-     * Generate service method with improved model structure
-     * FIXED: Content section variables are put at top level for better template access
+     * Generate service method with simplified model structure
      */
     private void generateServiceMethod(
             TypeSpec.Builder serviceBuilder,
@@ -116,7 +114,7 @@ public class EmailServiceGenerator {
                 .addJavadoc("@param params The parameters for this email template\n")
                 .addJavadoc("@return An email builder configured with the template content\n");
 
-        // Create method body with better structure
+        // Create method body with simplified structure
         CodeBlock.Builder codeBlockBuilder = CodeBlock.builder()
                 .addStatement("$T<$T, $T> model = new $T<>()",
                         Map.class, String.class, Object.class, HashMap.class);
@@ -127,7 +125,7 @@ public class EmailServiceGenerator {
                     var.getName(), capitalizeFirst(var.getName()));
         }
 
-        // Add section parameters - special handling for 'content' section
+        // Add section parameters with special handling for 'content' section
         for (Map.Entry<String, ClassName> entry : sectionParamClasses.entrySet()) {
             String sectionName = entry.getKey();
             SectionDefinition section = email.getSectionDefinition(sectionName).orElse(null);
@@ -135,30 +133,28 @@ public class EmailServiceGenerator {
             if (section != null && section.getVariables() != null && !section.getVariables().isEmpty()) {
                 codeBlockBuilder.beginControlFlow("if (params.get$LParams() != null)", capitalizeFirst(sectionName));
 
-                // FIXED: For 'content' section, put variables directly in top level of model
-                // This aligns with template expectations of ${variableName} in content section
+                // For 'content' section, put variables directly in top level of model
                 if ("content".equals(sectionName)) {
                     // Add content section variables directly to model top level
                     for (VariableDefinition var : section.getVariables()) {
                         codeBlockBuilder.addStatement("model.put($S, params.get$LParams().get$L())",
-                                var.getName(), // Note: No section prefix here
+                                var.getName(), // no section prefix for content variables
                                 capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
                     }
                 } else {
-                    // For other sections, create section map as before
-                    codeBlockBuilder.addStatement("$T<$T, $T> $LMap = new $T<>()",
-                            Map.class, String.class, Object.class,
-                            sectionName, HashMap.class);
+                    // For other sections, create a single section map
+                    codeBlockBuilder.addStatement("$T<$T, $T> " + sectionName + "Map = new $T<>()",
+                            Map.class, String.class, Object.class, HashMap.class);
 
-                    // Add all section variables to the section map
+                    // Add section variables directly to section map
                     for (VariableDefinition var : section.getVariables()) {
-                        codeBlockBuilder.addStatement("$LMap.put($S, params.get$LParams().get$L())",
-                                sectionName, var.getName(),
+                        codeBlockBuilder.addStatement(sectionName + "Map.put($S, params.get$LParams().get$L())",
+                                var.getName(),
                                 capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
                     }
 
                     // Add the section map to the model
-                    codeBlockBuilder.addStatement("model.put($S, $LMap)", sectionName, sectionName);
+                    codeBlockBuilder.addStatement("model.put($S, " + sectionName + "Map)", sectionName);
                 }
 
                 codeBlockBuilder.endControlFlow();
@@ -183,8 +179,7 @@ public class EmailServiceGenerator {
     }
 
     /**
-     * Generate render method with improved model structure
-     * FIXED: Content section variables are put at top level for better template access
+     * Generate render method with simplified model structure
      */
     private void generateRenderMethod(
             TypeSpec.Builder serviceBuilder,
@@ -211,7 +206,7 @@ public class EmailServiceGenerator {
                     var.getName(), capitalizeFirst(var.getName()));
         }
 
-        // Add section parameters - special handling for 'content' section
+        // Add section parameters with special handling for 'content' section
         for (Map.Entry<String, ClassName> entry : sectionParamClasses.entrySet()) {
             String sectionName = entry.getKey();
             SectionDefinition section = email.getSectionDefinition(sectionName).orElse(null);
@@ -219,29 +214,28 @@ public class EmailServiceGenerator {
             if (section != null && section.getVariables() != null && !section.getVariables().isEmpty()) {
                 codeBlockBuilder.beginControlFlow("if (params.get$LParams() != null)", capitalizeFirst(sectionName));
 
-                // FIXED: For 'content' section, put variables directly in top level of model
+                // For 'content' section, put variables directly in top level of model
                 if ("content".equals(sectionName)) {
                     // Add content section variables directly to model top level
                     for (VariableDefinition var : section.getVariables()) {
                         codeBlockBuilder.addStatement("model.put($S, params.get$LParams().get$L())",
-                                var.getName(), // Note: No section prefix here
+                                var.getName(), // no section prefix for content variables
                                 capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
                     }
                 } else {
-                    // For other sections, create section map as before
-                    codeBlockBuilder.addStatement("$T<$T, $T> $LMap = new $T<>()",
-                            Map.class, String.class, Object.class,
-                            sectionName, HashMap.class);
+                    // For other sections, create a single section map
+                    codeBlockBuilder.addStatement("$T<$T, $T> " + sectionName + "Map = new $T<>()",
+                            Map.class, String.class, Object.class, HashMap.class);
 
-                    // Add all section variables to the section map
+                    // Add section variables directly to section map
                     for (VariableDefinition var : section.getVariables()) {
-                        codeBlockBuilder.addStatement("$LMap.put($S, params.get$LParams().get$L())",
-                                sectionName, var.getName(),
+                        codeBlockBuilder.addStatement(sectionName + "Map.put($S, params.get$LParams().get$L())",
+                                var.getName(),
                                 capitalizeFirst(sectionName), capitalizeFirst(var.getName()));
                     }
 
                     // Add the section map to the model
-                    codeBlockBuilder.addStatement("model.put($S, $LMap)", sectionName, sectionName);
+                    codeBlockBuilder.addStatement("model.put($S, " + sectionName + "Map)", sectionName);
                 }
 
                 codeBlockBuilder.endControlFlow();
