@@ -4,6 +4,7 @@ package com.example.app.controller;
 import com.example.app.model.OrderItem;
 import com.example.app.service.EmailService;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,13 +16,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/emails")
+@RequiredArgsConstructor
 public class EmailController {
 
     private final EmailService emailService;
-
-    public EmailController(EmailService emailService) {
-        this.emailService = emailService;
-    }
 
     @PostMapping("/welcome")
     public ResponseEntity<Map<String, String>> sendWelcomeEmail(@RequestBody Map<String, String> request) {

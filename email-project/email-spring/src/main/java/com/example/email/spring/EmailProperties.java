@@ -19,14 +19,14 @@ public class EmailProperties {
     private String baseUrl;
 
     /**
-     * Company name (used in templates)
-     */
-    private String companyName = "Company Name";
-
-    /**
      * Whether to enable email sending (useful for development)
      */
     private boolean enabled = true;
+
+    /**
+     * Mail provider configuration
+     */
+    private Provider provider = new Provider();
 
     public String getFromAddress() {
         return fromAddress;
@@ -44,19 +44,38 @@ public class EmailProperties {
         this.baseUrl = baseUrl;
     }
 
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Provider getProvider() {
+        return provider;
+    }
+
+    public void setProvider(Provider provider) {
+        this.provider = provider;
+    }
+
+    /**
+     * Mail provider configuration properties
+     */
+    public static class Provider {
+        /**
+         * Name of the mail provider to use.
+         * If not specified, the default provider will be used.
+         */
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }

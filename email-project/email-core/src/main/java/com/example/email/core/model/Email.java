@@ -2,7 +2,9 @@ package com.example.email.core.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an email to be sent.
@@ -16,6 +18,7 @@ public class Email {
     private final String content;
     private final boolean html;
     private final List<Attachment> attachments;
+    private final Map<String, Object> modelAttributes;
 
     private Email(Builder builder) {
         this.from = builder.from;
@@ -26,6 +29,7 @@ public class Email {
         this.content = builder.content;
         this.html = builder.html;
         this.attachments = Collections.unmodifiableList(new ArrayList<>(builder.attachments));
+        this.modelAttributes = Collections.unmodifiableMap(new HashMap<>(builder.modelAttributes));
     }
 
     public String getFrom() {
@@ -60,6 +64,10 @@ public class Email {
         return attachments;
     }
 
+    public Map<String, Object> getModelAttributes() {
+        return modelAttributes;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -76,6 +84,7 @@ public class Email {
         private String content;
         private boolean html = true;
         private final List<Attachment> attachments = new ArrayList<>();
+        private final Map<String, Object> modelAttributes = new HashMap<>();
 
         public Builder from(String from) {
             this.from = from;
@@ -134,6 +143,16 @@ public class Email {
 
         public Builder attachments(List<Attachment> attachments) {
             this.attachments.addAll(attachments);
+            return this;
+        }
+
+        public Builder modelAttribute(String key, Object value) {
+            this.modelAttributes.put(key, value);
+            return this;
+        }
+
+        public Builder modelAttributes(Map<String, Object> attributes) {
+            this.modelAttributes.putAll(attributes);
             return this;
         }
 

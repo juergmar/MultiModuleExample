@@ -18,6 +18,8 @@ email:
   baseUrl: http://localhost:8080
   companyName: Example Company
   enabled: true
+  provider:
+    name: spring
 
 
 # Debug to see which templates are resolved

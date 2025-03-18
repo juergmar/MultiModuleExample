@@ -9,11 +9,13 @@ import com.example.email.example.generated.PasswordResetParams;
 import com.example.email.example.generated.WelcomeParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
@@ -21,6 +23,7 @@ public class EmailService {
     private final ExampleEmailService emailTemplateService;
     private final EmailSender emailSender;
 
+    // Constructor now depends on EmailSender interface rather than implementation
     public EmailService(ExampleEmailService emailTemplateService, EmailSender emailSender) {
         this.emailTemplateService = emailTemplateService;
         this.emailSender = emailSender;

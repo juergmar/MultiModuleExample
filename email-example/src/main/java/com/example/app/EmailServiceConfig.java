@@ -1,32 +1,48 @@
 package com.example.app;
 
-import com.example.app.service.EmailService;
+import com.example.email.core.provider.MailInterceptor;
+import com.example.email.core.provider.MailProvider;
+import com.example.email.core.provider.MailProviderFactory;
+import com.example.email.core.sender.ConfigurableEmailSender;
 import com.example.email.core.sender.EmailSender;
-import com.example.email.core.service.EmailTemplateService;
 import com.example.email.core.template.TemplateEngine;
 import com.example.email.example.generated.ExampleEmailService;
+import com.example.email.spring.SpringEmailConfig;
 import com.example.email.spring.EmailProperties;
-import com.example.email.spring.SpringEmailSender;
+import com.example.email.spring.provider.SpringMailProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
+
+import java.util.List;
 
 @Configuration
 public class EmailServiceConfig {
 
     @Bean
     public ExampleEmailService exampleEmailService(TemplateEngine emailTemplateEngine,
-                                                   EmailTemplateService.EmailConfig emailConfig) {
-        return new ExampleEmailService(emailTemplateEngine, emailConfig);
+                                                   SpringEmailConfig springEmailConfig) {
+        return new ExampleEmailService(emailTemplateEngine, springEmailConfig);
     }
 
     @Bean
-    public EmailSender emailSender(JavaMailSender javaMailSender, EmailProperties emailProperties) {
-        return new SpringEmailSender(javaMailSender, emailProperties);
+    public MailProvider springMailProvider(JavaMailSender javaMailSender,
+                                           EmailProperties emailProperties,
+                                           List<MailInterceptor> interceptors) {
+        SpringMailProvider provider = new SpringMailProvider(
+                javaMailSender,
+                emailProperties.isEnabled(),
+                interceptors
+        );
+
+        // Register the provider with the factory
+        MailProviderFactory.registerProvider("spring", provider, true);
+
+        return provider;
     }
 
     @Bean
-    public EmailService emailService(ExampleEmailService exampleEmailService, EmailSender emailSender) {
-        return new EmailService(exampleEmailService, emailSender);
+    public EmailSender emailSender() {
+        return new ConfigurableEmailSender("spring");
     }
 }

@@ -2,6 +2,7 @@ package com.example.email.generator;
 
 import com.example.email.core.generator.EmailDefinition;
 import com.example.email.core.model.Email;
+import com.example.email.core.service.EmailConfig;
 import com.example.email.core.service.EmailTemplateService;
 import com.example.email.core.template.TemplateEngine;
 import com.squareup.javapoet.ClassName;
@@ -51,7 +52,7 @@ public class EmailServiceGenerator {
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(ClassName.get(TemplateEngine.class), "templateEngine")
-                .addParameter(ClassName.get(EmailTemplateService.EmailConfig.class), "emailConfig")
+                .addParameter(ClassName.get(EmailConfig.class), "emailConfig")
                 .addStatement("super(templateEngine, emailConfig)")
                 .build();
 

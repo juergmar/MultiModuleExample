@@ -24,6 +24,7 @@
         <jackson.version>2.16.0</jackson.version>
         <maven.plugin.api.version>3.9.0</maven.plugin.api.version>
         <maven.plugin.annotations.version>3.9.0</maven.plugin.annotations.version>
+        <lombok.version>1.18.36</lombok.version>
     </properties>
 
     <build>
