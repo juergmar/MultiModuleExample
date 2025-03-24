@@ -10,7 +10,9 @@
 
     <modules>
         <module>my-config-generator</module>
-        <module>my-annotation-module</module>
+
+        <!-- Then build the rest of the modules -->
+        <module>translation-enum-generator</module>
         <module>my-app-base</module>
         <module>my-app-customerA</module>
         <module>my-app-customerB</module>

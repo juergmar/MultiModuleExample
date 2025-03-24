@@ -8,11 +8,15 @@
         <artifactId>my-app-parent</artifactId>
         <version>1.0.0</version>
     </parent>
-    <artifactId>my-annotation-module</artifactId>
+    <artifactId>translation-enum-generator</artifactId>
     <packaging>jar</packaging>
+
+    <name>Translation Enum Generator</name>
+    <description>Annotation processor that generates type-safe translation enums from JSON files</description>
 
     <properties>
         <auto-service.version>1.1.1</auto-service.version>
+        <javapoet.version>1.13.0</javapoet.version>
     </properties>
 
     <dependencies>
@@ -22,6 +26,13 @@
             <artifactId>auto-service</artifactId>
             <version>${auto-service.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- JavaPoet for code generation -->
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>${javapoet.version}</version>
         </dependency>
 
         <!-- Jackson for JSON processing -->
@@ -57,5 +68,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

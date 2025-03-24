@@ -1,12 +1,14 @@
 package de.ma.mme.customerB;
 
-import de.ma.mme.customerB.config.AppConfig;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static de.ma.mme.customerB.config.getFeatures.getFeatures;
+import static de.ma.mme.customerB.config.getFeatures.getUi;
 
 @Service
 public class ApplicationService {
@@ -19,7 +21,7 @@ public class ApplicationService {
     }
 
     private void configureFeatures() {
-        Map<String, Object> features = AppConfig.getFeatures();
+        Map<String, Object> features = getFeatures();
 
         // Configure analytics
         boolean enableAnalytics = (Boolean) features.getOrDefault("enableAnalytics", false);
@@ -42,7 +44,7 @@ public class ApplicationService {
     }
 
     private void setupScheduledTasks() {
-        Map<String, Object> ui = AppConfig.getUi();
+        Map<String, Object> ui = getUi();
         int refreshInterval = (Integer) ui.getOrDefault("refreshIntervalSeconds", 300);
 
         // Schedule data refresh task
@@ -54,7 +56,7 @@ public class ApplicationService {
         );
 
         // Schedule cache cleanup
-        Map<String, Object> features = AppConfig.getFeatures();
+        Map<String, Object> features = getFeatures();
         int cacheTimeout = (Integer) features.getOrDefault("cacheTimeoutMinutes", 60);
 
         scheduler.scheduleAtFixedRate(

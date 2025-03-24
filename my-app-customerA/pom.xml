@@ -21,7 +21,7 @@
         <!-- Add dependency on the annotation module -->
         <dependency>
             <groupId>com.example</groupId>
-            <artifactId>my-annotation-module</artifactId>
+            <artifactId>translation-enum-generator</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- Spring Boot Starter -->
@@ -81,8 +81,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>9</source>
-                    <target>9</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
         </plugins>
