@@ -1,53 +1,45 @@
 package de.ma.mme.customerB;
 
+import de.ma.mme.customerB.config.AppConfig;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static de.ma.mme.customerB.config.getFeatures.getFeatures;
-import static de.ma.mme.customerB.config.getFeatures.getUi;
 
 @Service
 public class ApplicationService {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final AppConfig appConfig;
 
-    public ApplicationService() {
+    public ApplicationService(AppConfig appConfig) {
+        this.appConfig = appConfig;
         configureFeatures();
         setupScheduledTasks();
     }
 
     private void configureFeatures() {
-        Map<String, Object> features = getFeatures();
-
         // Configure analytics
-        boolean enableAnalytics = (Boolean) features.getOrDefault("enableAnalytics", false);
-        if (enableAnalytics) {
+        if (appConfig.getFeatures().getEnableAnalytics()) {
             initializeAnalytics();
         }
 
         // Configure export functionality
-        boolean enableExport = (Boolean) features.getOrDefault("enableExport", false);
-        if (enableExport) {
-            int maxExportSize = (Integer) features.getOrDefault("maxExportSize", 500);
+        if (appConfig.getFeatures().getEnableExport()) {
+            int maxExportSize = appConfig.getFeatures().getMaxExportSize();
             configureExport(maxExportSize);
         }
 
         // Configure notifications
-        boolean enableNotifications = (Boolean) features.getOrDefault("enableNotifications", false);
-        if (enableNotifications) {
+        if (appConfig.getFeatures().getEnableNotifications()) {
             initializeNotifications();
         }
     }
 
     private void setupScheduledTasks() {
-        Map<String, Object> ui = getUi();
-        int refreshInterval = (Integer) ui.getOrDefault("refreshIntervalSeconds", 300);
-
         // Schedule data refresh task
+        int refreshInterval = appConfig.getUi().getRefreshIntervalSeconds();
         scheduler.scheduleAtFixedRate(
                 this::refreshData,
                 refreshInterval,
@@ -56,9 +48,7 @@ public class ApplicationService {
         );
 
         // Schedule cache cleanup
-        Map<String, Object> features = getFeatures();
-        int cacheTimeout = (Integer) features.getOrDefault("cacheTimeoutMinutes", 60);
-
+        int cacheTimeout = appConfig.getFeatures().getCacheTimeoutMinutes();
         scheduler.scheduleAtFixedRate(
                 this::cleanupCache,
                 cacheTimeout,
